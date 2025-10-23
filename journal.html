@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journal Entries - Mood Tracker Journal</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Core Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --sage-green: #87A96B;
+            --warm-gray: #8B8680;
+            --soft-peach: #F4C2A1;
+            --cream-white: #FAF9F6;
+            --charcoal: #2C2C2C;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #FAF9F6 0%, #F0F4ED 100%);
+            min-height: 100vh;
+        }
+        
+        .font-display { font-family: 'Playfair Display', serif; }
+        .font-handwritten { font-family: 'Caveat', cursive; }
+        
+        .floating-nav {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(135, 169, 107, 0.2);
+        }
+        
+        .entry-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(135, 169, 107, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .entry-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .filter-chip {
+            background: var(--soft-peach);
+            color: var(--charcoal);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .filter-chip:hover {
+            background: var(--sage-green);
+            color: white;
+        }
+        
+        .filter-chip.active {
+            background: var(--sage-green);
+            color: white;
+            border-color: var(--warm-gray);
+        }
+        
+        .search-input {
+            border: 2px solid rgba(135, 169, 107, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            border-color: var(--sage-green);
+            box-shadow: 0 0 0 3px rgba(135, 169, 107, 0.1);
+        }
+        
+        .mood-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(135, 169, 107, 0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .photo-item {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .photo-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="floating-nav fixed top-0 left-0 right-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-sage-green to-warm-gray rounded-full flex items-center justify-center">
+                    <span class="text-white font-bold text-lg">M</span>
+                </div>
+                <h1 class="font-display text-xl font-semibold text-charcoal">Mood Journal</h1>
+            </div>
+            
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="index.html" class="text-warm-gray hover:text-sage-green transition-colors">Dashboard</a>
+                <a href="journal.html" class="text-sage-green font-medium border-b-2 border-sage-green pb-1">Journal</a>
+                <a href="analytics.html" class="text-warm-gray hover:text-sage-green transition-colors">Analytics</a>
+                <button id="logout-btn" class="bg-sage-green text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-all">
+                    Logout
+                </button>
+            </div>
+            
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden p-2 text-warm-gray">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden mt-4 pb-4">
+            <div class="flex flex-col space-y-3">
+                <a href="index.html" class="text-warm-gray">Dashboard</a>
+                <a href="journal.html" class="text-sage-green font-medium">Journal</a>
+                <a href="analytics.html" class="text-warm-gray">Analytics</a>
+                <button id="logout-btn-mobile" class="text-warm-gray text-left">Logout</button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="pt-24 pb-16">
+        <!-- Header Section -->
+        <section class="px-6 mb-8">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+                    <div>
+                        <h2 class="font-display text-3xl font-bold text-charcoal mb-2">Your Mood Journal</h2>
+                        <p class="text-warm-gray">Explore your emotional journey over time</p>
+                    </div>
+                    <div class="mt-4 md:mt-0">
+                        <a href="index.html" class="bg-sage-green text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition-all inline-block">
+                            + New Entry
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Search and Filters -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-sage-green/20 mb-8">
+                    <!-- Search Bar -->
+                    <div class="mb-6">
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                id="search-input"
+                                class="search-input w-full pl-12 pr-4 py-3 rounded-lg outline-none"
+                                placeholder="Search your entries..."
+                            >
+                            <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-warm-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <!-- Filter Chips -->
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-sm font-medium text-charcoal mb-2">Mood Rating</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="filter-chip" data-filter="mood" data-value="1-3">Low (1-3)</span>
+                                <span class="filter-chip" data-filter="mood" data-value="4-6">Neutral (4-6)</span>
+                                <span class="filter-chip" data-filter="mood" data-value="7-10">High (7-10)</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-charcoal mb-2">Categories</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="filter-chip" data-filter="tag" data-value="work">Work</span>
+                                <span class="filter-chip" data-filter="tag" data-value="relationships">Relationships</span>
+                                <span class="filter-chip" data-filter="tag" data-value="health">Health</span>
+                                <span class="filter-chip" data-filter="tag" data-value="family">Family</span>
+                                <span class="filter-chip" data-filter="tag" data-value="personal">Personal</span>
+                                <span class="filter-chip" data-filter="tag" data-value="exercise">Exercise</span>
+                                <span class="filter-chip" data-filter="tag" data-value="social">Social</span>
+                                <span class="filter-chip" data-filter="tag" data-value="creative">Creative</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-charcoal mb-2">Time Period</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="filter-chip" data-filter="time" data-value="today">Today</span>
+                                <span class="filter-chip" data-filter="time" data-value="week">This Week</span>
+                                <span class="filter-chip" data-filter="time" data-value="month">This Month</span>
+                                <span class="filter-chip" data-filter="time" data-value="year">This Year</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Clear Filters -->
+                    <div class="mt-4 text-center">
+                        <button id="clear-filters" class="text-sage-green hover:text-warm-gray transition-colors text-sm font-medium">
+                            Clear all filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Entries Grid -->
+        <section class="px-6">
+            <div class="max-w-6xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="entries-grid">
+                    <!-- Sample entries - will be populated by JavaScript -->
+                    <div class="entry-card rounded-xl p-6" data-entry-id="1">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="mood-indicator" style="background-color: #87A96B;"></div>
+                                <span class="text-sm text-warm-gray">Today</span>
+                            </div>
+                            <div class="text-2xl">😊</div>
+                        </div>
+                        <div class="text-lg font-semibold text-charcoal mb-2">Great day!</div>
+                        <p class="text-warm-gray text-sm mb-3 line-clamp-3">
+                            Had an amazing morning walk in the park. The weather was perfect and I felt so peaceful. Got some great photos of the sunrise and enjoyed the quiet moments before the day got busy.
+                        </p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex space-x-1">
+                                <span class="filter-chip text-xs">Exercise</span>
+                                <span class="filter-chip text-xs">Personal</span>
+                            </div>
+                            <div class="text-xs text-warm-gray">8/10</div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-sage-green/10">
+                            <div class="photo-grid grid-cols-2 gap-2">
+                                <div class="photo-item">
+                                    <img src="https://kimi-web-img.moonshot.cn/img/www.christafairbrother.com/e3c70e0b86a386d5b5f65e55e2d0396961e1be62.jpg" alt="Sunrise photo">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="entry-card rounded-xl p-6" data-entry-id="2">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="mood-indicator" style="background-color: #8B8680;"></div>
+                                <span class="text-sm text-warm-gray">Yesterday</span>
+                            </div>
+                            <div class="text-2xl">😐</div>
+                        </div>
+                        <div class="text-lg font-semibold text-charcoal mb-2">Productive but tired</div>
+                        <p class="text-warm-gray text-sm mb-3 line-clamp-3">
+                            Work was busy today. Got a lot done but feeling a bit drained. Need to rest more and take better care of myself. Planning to go to bed early tonight.
+                        </p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex space-x-1">
+                                <span class="filter-chip text-xs">Work</span>
+                            </div>
+                            <div class="text-xs text-warm-gray">6/10</div>
+                        </div>
+                    </div>
+                    
+                    <div class="entry-card rounded-xl p-6" data-entry-id="3">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="mood-indicator" style="background-color: #FF6B6B;"></div>
+                                <span class="text-sm text-warm-gray">2 days ago</span>
+                            </div>
+                            <div class="text-2xl">😔</div>
+                        </div>
+                        <div class="text-lg font-semibold text-charcoal mb-2">Challenging day</div>
+                        <p class="text-warm-gray text-sm mb-3 line-clamp-3">
+                            Feeling a bit overwhelmed with everything going on. Taking it one step at a time and trying to practice self-compassion. Tomorrow is a new day.
+                        </p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex space-x-1">
+                                <span class="filter-chip text-xs">Personal</span>
+                                <span class="filter-chip text-xs">Health</span>
+                            </div>
+                            <div class="text-xs text-warm-gray">4/10</div>
+                        </div>
+                    </div>
+                    
+                    <div class="entry-card rounded-xl p-6" data-entry-id="4">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="mood-indicator" style="background-color: #87A96B;"></div>
+                                <span class="text-sm text-warm-gray">3 days ago</span>
+                            </div>
+                            <div class="text-2xl">😊</div>
+                        </div>
+                        <div class="text-lg font-semibold text-charcoal mb-2">Family time</div>
+                        <p class="text-warm-gray text-sm mb-3 line-clamp-3">
+                            Spent the day with family. We had a wonderful dinner together and shared lots of laughs. These moments remind me what's truly important in life.
+                        </p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex space-x-1">
+                                <span class="filter-chip text-xs">Family</span>
+                                <span class="filter-chip text-xs">Social</span>
+                            </div>
+                            <div class="text-xs text-warm-gray">9/10</div>
+                        </div>
+                    </div>
+                    
+                    <div class="entry-card rounded-xl p-6" data-entry-id="5">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="mood-indicator" style="background-color: #FFE66D;"></div>
+                                <span class="text-sm text-warm-gray">4 days ago</span>
+                            </div>
+                            <div class="text-2xl">🎨</div>
+                        </div>
+                        <div class="text-lg font-semibold text-charcoal mb-2">Creative flow</div>
+                        <p class="text-warm-gray text-sm mb-3 line-clamp-3">
+                            Had an amazing creative session today. Painted for hours and felt completely in the zone. Art really helps me process emotions and express myself.
+                        </p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex space-x-1">
+                                <span class="filter-chip text-xs">Creative</span>
+                                <span class="filter-chip text-xs">Personal</span>
+                            </div>
+                            <div class="text-xs text-warm-gray">7/10</div>
+                        </div>
+                    </div>
+                    
+                    <div class="entry-card rounded-xl p-6" data-entry-id="6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="mood-indicator" style="background-color: #8B8680;"></div>
+                                <span class="text-sm text-warm-gray">5 days ago</span>
+                            </div>
+                            <div class="text-2xl">💭</div>
+                        </div>
+                        <div class="text-lg font-semibold text-charcoal mb-2">Reflective mood</div>
+                        <p class="text-warm-gray text-sm mb-3 line-clamp-3">
+                            Spent some time journaling and reflecting on my goals. Feeling hopeful about the future but also realistic about the work ahead.
+                        </p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex space-x-1">
+                                <span class="filter-chip text-xs">Personal</span>
+                                <span class="filter-chip text-xs">Health</span>
+                            </div>
+                            <div class="text-xs text-warm-gray">6/10</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Load More Button -->
+                <div class="text-center mt-12">
+                    <button id="load-more" class="bg-sage-green text-white px-8 py-3 rounded-lg font-medium hover:bg-opacity-90 transition-all">
+                        Load More Entries
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Entry Detail Modal -->
+    <div id="entry-modal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+        <div class="modal-content rounded-2xl p-8 max-w-2xl w-full">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-display text-2xl font-semibold text-charcoal">Entry Details</h3>
+                <button id="close-modal" class="text-warm-gray hover:text-charcoal transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div id="modal-content">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            
+            <div class="flex items-center justify-between mt-8 pt-6 border-t border-sage-green/20">
+                <button id="edit-entry" class="bg-sage-green text-white px-6 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all">
+                    Edit Entry
+                </button>
+                <button id="delete-entry" class="text-red-500 hover:text-red-700 transition-colors font-medium">
+                    Delete Entry
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-white/50 backdrop-blur-sm border-t border-sage-green/20 py-8">
+        <div class="max-w-6xl mx-auto px-6 text-center">
+            <p class="text-warm-gray text-sm">
+                © 2024 Mood Tracker Journal. Your mental wellness journey, beautifully tracked.
+            </p>
+        </div>
+    </footer>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <div class="animate-spin w-8 h-8 border-2 border-sage-green border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-charcoal">Loading entries...</p>
+        </div>
+    </div>
+    
+    <script src="main.js"></script>
+    <script src="appwrite-config.js"></script>
+</body>
+</html>

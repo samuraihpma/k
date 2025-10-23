@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Analytics - Mood Tracker Journal</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Core Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    
+    <style>
+        :root {
+            --sage-green: #87A96B;
+            --warm-gray: #8B8680;
+            --soft-peach: #F4C2A1;
+            --cream-white: #FAF9F6;
+            --charcoal: #2C2C2C;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #FAF9F6 0%, #F0F4ED 100%);
+            min-height: 100vh;
+        }
+        
+        .font-display { font-family: 'Playfair Display', serif; }
+        .font-handwritten { font-family: 'Caveat', cursive; }
+        
+        .floating-nav {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(135, 169, 107, 0.2);
+        }
+        
+        .chart-container {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(135, 169, 107, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .chart-container:hover {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(135, 169, 107, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+        }
+        
+        .insight-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-left: 4px solid var(--sage-green);
+            transition: all 0.3s ease;
+        }
+        
+        .insight-card:hover {
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateX(4px);
+        }
+        
+        .date-picker {
+            border: 2px solid rgba(135, 169, 107, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .date-picker:focus {
+            border-color: var(--sage-green);
+            box-shadow: 0 0 0 3px rgba(135, 169, 107, 0.1);
+        }
+        
+        .export-btn {
+            background: var(--soft-peach);
+            color: var(--charcoal);
+            transition: all 0.3s ease;
+        }
+        
+        .export-btn:hover {
+            background: var(--sage-green);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(135, 169, 107, 0.3);
+        }
+        
+        .calendar-day {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+        }
+        
+        .calendar-day:hover {
+            background: rgba(135, 169, 107, 0.1);
+        }
+        
+        .calendar-day.has-data {
+            color: white;
+            font-weight: 600;
+        }
+        
+        .calendar-day.mood-1 { background: #FF6B6B; }
+        .calendar-day.mood-2 { background: #FF8E53; }
+        .calendar-day.mood-3 { background: #FF9F43; }
+        .calendar-day.mood-4 { background: #FFC048; }
+        .calendar-day.mood-5 { background: #FFD93D; }
+        .calendar-day.mood-6 { background: #E6D75C; }
+        .calendar-day.mood-7 { background: #A8E6CF; }
+        .calendar-day.mood-8 { background: #7FCDCD; }
+        .calendar-day.mood-9 { background: #5C7AEA; }
+        .calendar-day.mood-10 { background: #3D5A80; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="floating-nav fixed top-0 left-0 right-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-sage-green to-warm-gray rounded-full flex items-center justify-center">
+                    <span class="text-white font-bold text-lg">M</span>
+                </div>
+                <h1 class="font-display text-xl font-semibold text-charcoal">Mood Journal</h1>
+            </div>
+            
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="index.html" class="text-warm-gray hover:text-sage-green transition-colors">Dashboard</a>
+                <a href="journal.html" class="text-warm-gray hover:text-sage-green transition-colors">Journal</a>
+                <a href="analytics.html" class="text-sage-green font-medium border-b-2 border-sage-green pb-1">Analytics</a>
+                <button id="logout-btn" class="bg-sage-green text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-all">
+                    Logout
+                </button>
+            </div>
+            
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden p-2 text-warm-gray">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden mt-4 pb-4">
+            <div class="flex flex-col space-y-3">
+                <a href="index.html" class="text-warm-gray">Dashboard</a>
+                <a href="journal.html" class="text-warm-gray">Journal</a>
+                <a href="analytics.html" class="text-sage-green font-medium">Analytics</a>
+                <button id="logout-btn-mobile" class="text-warm-gray text-left">Logout</button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="pt-24 pb-16">
+        <!-- Header Section -->
+        <section class="px-6 mb-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+                    <div>
+                        <h2 class="font-display text-3xl font-bold text-charcoal mb-2">Mood Analytics</h2>
+                        <p class="text-warm-gray">Discover patterns in your emotional wellness journey</p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex items-center space-x-3">
+                        <button class="export-btn px-4 py-2 rounded-lg font-medium">
+                            Export PDF
+                        </button>
+                        <button class="export-btn px-4 py-2 rounded-lg font-medium">
+                            Export CSV
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Date Range Selector -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-sage-green/20 mb-8">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                        <div>
+                            <h3 class="font-display text-lg font-semibold text-charcoal mb-2">Time Period</h3>
+                            <p class="text-sm text-warm-gray">Select the date range for your analysis</p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-2">
+                                <label class="text-sm font-medium text-charcoal">From:</label>
+                                <input type="date" id="date-from" class="date-picker px-3 py-2 rounded-lg outline-none">
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <label class="text-sm font-medium text-charcoal">To:</label>
+                                <input type="date" id="date-to" class="date-picker px-3 py-2 rounded-lg outline-none">
+                            </div>
+                            <button id="apply-date-range" class="bg-sage-green text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all">
+                                Apply
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Key Statistics -->
+        <section class="px-6 mb-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="stat-card rounded-xl p-6 text-center">
+                        <div class="text-3xl font-bold text-sage-green mb-2">6.8</div>
+                        <div class="text-sm text-warm-gray mb-1">Average Mood</div>
+                        <div class="text-xs text-warm-gray">Last 30 days</div>
+                    </div>
+                    
+                    <div class="stat-card rounded-xl p-6 text-center">
+                        <div class="text-3xl font-bold text-sage-green mb-2">7</div>
+                        <div class="text-sm text-warm-gray mb-1">Current Streak</div>
+                        <div class="text-xs text-warm-gray">Days logged</div>
+                    </div>
+                    
+                    <div class="stat-card rounded-xl p-6 text-center">
+                        <div class="text-3xl font-bold text-sage-green mb-2">42</div>
+                        <div class="text-sm text-warm-gray mb-1">Total Entries</div>
+                        <div class="text-xs text-warm-gray">All time</div>
+                    </div>
+                    
+                    <div class="stat-card rounded-xl p-6 text-center">
+                        <div class="text-3xl font-bold text-sage-green mb-2">85%</div>
+                        <div class="text-sm text-warm-gray mb-1">Positive Days</div>
+                        <div class="text-xs text-warm-gray">Mood > 5</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Charts Section -->
+        <section class="px-6 mb-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Mood Trend Chart -->
+                    <div class="chart-container rounded-2xl p-6">
+                        <h3 class="font-display text-xl font-semibold text-charcoal mb-4">Mood Trend</h3>
+                        <div id="mood-trend-chart" style="height: 300px;"></div>
+                    </div>
+                    
+                    <!-- Mood Distribution -->
+                    <div class="chart-container rounded-2xl p-6">
+                        <h3 class="font-display text-xl font-semibold text-charcoal mb-4">Mood Distribution</h3>
+                        <div id="mood-distribution-chart" style="height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Calendar Heatmap -->
+        <section class="px-6 mb-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="chart-container rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="font-display text-xl font-semibold text-charcoal">Monthly Calendar</h3>
+                        <div class="flex items-center space-x-4">
+                            <button id="prev-month" class="text-warm-gray hover:text-sage-green transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                            </button>
+                            <span id="current-month" class="font-medium text-charcoal">October 2024</span>
+                            <button id="next-month" class="text-warm-gray hover:text-sage-green transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="calendar-heatmap">
+                        <!-- Calendar will be generated by JavaScript -->
+                        <div class="grid grid-cols-7 gap-2 mb-4">
+                            <div class="text-center text-sm font-medium text-warm-gray py-2">Sun</div>
+                            <div class="text-center text-sm font-medium text-warm-gray py-2">Mon</div>
+                            <div class="text-center text-sm font-medium text-warm-gray py-2">Tue</div>
+                            <div class="text-center text-sm font-medium text-warm-gray py-2">Wed</div>
+                            <div class="text-center text-sm font-medium text-warm-gray py-2">Thu</div>
+                            <div class="text-center text-sm font-medium text-warm-gray py-2">Fri</div>
+                            <div class="text-center text-sm font-medium text-warm-gray py-2">Sat</div>
+                        </div>
+                        
+                        <div class="grid grid-cols-7 gap-2" id="calendar-days">
+                            <!-- Days will be populated by JavaScript -->
+                            <div class="calendar-day">29</div>
+                            <div class="calendar-day">30</div>
+                            <div class="calendar-day">1</div>
+                            <div class="calendar-day">2</div>
+                            <div class="calendar-day">3</div>
+                            <div class="calendar-day">4</div>
+                            <div class="calendar-day">5</div>
+                            <div class="calendar-day">6</div>
+                            <div class="calendar-day">7</div>
+                            <div class="calendar-day">8</div>
+                            <div class="calendar-day">9</div>
+                            <div class="calendar-day">10</div>
+                            <div class="calendar-day">11</div>
+                            <div class="calendar-day">12</div>
+                            <div class="calendar-day">13</div>
+                            <div class="calendar-day">14</div>
+                            <div class="calendar-day">15</div>
+                            <div class="calendar-day mood-8">16</div>
+                            <div class="calendar-day">17</div>
+                            <div class="calendar-day">18</div>
+                            <div class="calendar-day">19</div>
+                            <div class="calendar-day">20</div>
+                            <div class="calendar-day">21</div>
+                            <div class="calendar-day">22</div>
+                            <div class="calendar-day">23</div>
+                            <div class="calendar-day">24</div>
+                            <div class="calendar-day">25</div>
+                            <div class="calendar-day">26</div>
+                            <div class="calendar-day">27</div>
+                            <div class="calendar-day">28</div>
+                            <div class="calendar-day">29</div>
+                            <div class="calendar-day">30</div>
+                            <div class="calendar-day">31</div>
+                            <div class="calendar-day">1</div>
+                            <div class="calendar-day">2</div>
+                            <div class="calendar-day">3</div>
+                            <div class="calendar-day">4</div>
+                            <div class="calendar-day">5</div>
+                            <div class="calendar-day">6</div>
+                            <div class="calendar-day">7</div>
+                            <div class="calendar-day">8</div>
+                            <div class="calendar-day">9</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Legend -->
+                    <div class="flex items-center justify-center space-x-4 mt-6">
+                        <span class="text-sm text-warm-gray">Less</span>
+                        <div class="flex space-x-1">
+                            <div class="w-4 h-4 rounded mood-1"></div>
+                            <div class="w-4 h-4 rounded mood-3"></div>
+                            <div class="w-4 h-4 rounded mood-5"></div>
+                            <div class="w-4 h-4 rounded mood-7"></div>
+                            <div class="w-4 h-4 rounded mood-9"></div>
+                        </div>
+                        <span class="text-sm text-warm-gray">More</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Insights Section -->
+        <section class="px-6 mb-8">
+            <div class="max-w-7xl mx-auto">
+                <h3 class="font-display text-2xl font-semibold text-charcoal mb-6">Personal Insights</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="insight-card rounded-xl p-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 bg-sage-green/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-6 h-6 text-sage-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-charcoal mb-2">Improving Trend</h4>
+                                <p class="text-warm-gray text-sm">
+                                    Your mood has been trending upward over the past week. Great job maintaining consistency with your wellness routine!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="insight-card rounded-xl p-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 bg-soft-peach/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-6 h-6 text-soft-peach" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-charcoal mb-2">Best Time of Day</h4>
+                                <p class="text-warm-gray text-sm">
+                                    You tend to log higher mood ratings in the morning. Consider scheduling important activities during these peak hours.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="insight-card rounded-xl p-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 bg-warm-gray/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-6 h-6 text-warm-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-charcoal mb-2">Activity Correlation</h4>
+                                <p class="text-warm-gray text-sm">
+                                    Days when you log "exercise" tags tend to have 23% higher mood ratings. Keep up the great work with physical activity!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="insight-card rounded-xl p-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 bg-sage-green/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-6 h-6 text-sage-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-charcoal mb-2">Goal Achievement</h4>
+                                <p class="text-warm-gray text-sm">
+                                    You've successfully maintained a 7-day logging streak! Consistency is key to understanding your emotional patterns.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-white/50 backdrop-blur-sm border-t border-sage-green/20 py-8">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <p class="text-warm-gray text-sm">
+                © 2024 Mood Tracker Journal. Your mental wellness journey, beautifully tracked.
+            </p>
+        </div>
+    </footer>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <div class="animate-spin w-8 h-8 border-2 border-sage-green border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-charcoal">Generating insights...</p>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize charts when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMoodTrendChart();
+            initializeMoodDistributionChart();
+        });
+        
+        function initializeMoodTrendChart() {
+            const chart = echarts.init(document.getElementById('mood-trend-chart'));
+            
+            const option = {
+                color: ['#87A96B'],
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderColor: '#87A96B',
+                    textStyle: {
+                        color: '#2C2C2C'
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    axisLine: {
+                        lineStyle: {
+                            color: '#8B8680'
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    min: 1,
+                    max: 10,
+                    axisLine: {
+                        lineStyle: {
+                            color: '#8B8680'
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Mood Rating',
+                    type: 'line',
+                    smooth: true,
+                    data: [6, 8, 7, 9, 6, 8, 7],
+                    areaStyle: {
+                        opacity: 0.3
+                    },
+                    lineStyle: {
+                        width: 3
+                    },
+                    symbol: 'circle',
+                    symbolSize: 8
+                }]
+            };
+            
+            chart.setOption(option);
+            
+            // Make chart responsive
+            window.addEventListener('resize', function() {
+                chart.resize();
+            });
+        }
+        
+        function initializeMoodDistributionChart() {
+            const chart = echarts.init(document.getElementById('mood-distribution-chart'));
+            
+            const option = {
+                color: ['#FF6B6B', '#FFE66D', '#87A96B', '#A8E6CF', '#7FCDCD'],
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderColor: '#87A96B',
+                    textStyle: {
+                        color: '#2C2C2C'
+                    }
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    textStyle: {
+                        color: '#2C2C2C'
+                    }
+                },
+                series: [{
+                    name: 'Mood Range',
+                    type: 'pie',
+                    radius: '50%',
+                    data: [
+                        {value: 5, name: 'Low (1-3)'},
+                        {value: 15, name: 'Neutral (4-6)'},
+                        {value: 20, name: 'Good (7-8)'},
+                        {value: 10, name: 'Great (9-10)'}
+                    ],
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }]
+            };
+            
+            chart.setOption(option);
+            
+            // Make chart responsive
+            window.addEventListener('resize', function() {
+                chart.resize();
+            });
+        }
+    </script>
+    <script src="main.js"></script>
+    <script src="appwrite-config.js"></script>
+</body>
+</html>
